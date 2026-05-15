@@ -390,33 +390,7 @@
 </style>
 </head>
 <body>
-<div id="loginScreen" style="position:fixed;inset:0;background:#1a1a1a;display:flex;align-items:center;justify-content:center;z-index:9999">
-  <div style="background:#fff;border-radius:12px;padding:2.5rem;width:320px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.3)">
-    <div style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:4px">SGI Balingen</div>
-    <div style="font-size:13px;color:#8a877f;margin-bottom:1.5rem">Event Manager · Vorstand</div>
-    <input type="password" id="pwInput" placeholder="Passwort" style="width:100%;margin-bottom:12px;text-align:center;font-size:16px;letter-spacing:0.1em" onkeydown="if(event.key==='Enter')checkPw()">
-    <button onclick="checkPw()" style="width:100%;background:#CC0000;color:#fff;border:none;padding:10px;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer">Einloggen</button>
-    <div id="pwError" style="color:#CC0000;font-size:12px;margin-top:8px;display:none">Falsches Passwort</div>
-  </div>
-</div>
 
-<script>
-  const PW = 'SGI1834event';
-  function checkPw() {
-    if (document.getElementById('pwInput').value === PW) {
-      document.getElementById('loginScreen').style.display = 'none';
-      sessionStorage.setItem('sgi_auth', '1');
-    } else {
-      document.getElementById('pwError').style.display = 'block';
-      document.getElementById('pwInput').value = '';
-    }
-  }
-  if (sessionStorage.getItem('sgi_auth') === '1') {
-    document.getElementById('loginScreen').style.display = 'none';
-  }
-</script>
-  
-  
 <header class="header">
   <div class="header-brand">
     <div class="header-logo">SGI</div>
@@ -425,9 +399,7 @@
       <div class="header-sub">Schützengilde 1834 Balingen e.V.</div>
     </div>
   </div>
-  <div class="header-actions" style="display:flex;align-items:center;gap:12px">
-    <span id="syncStatus" style="font-size:12px;color:#aaa">…</span>
-    <button class="btn btn-sm" onclick="loadData().then(()=>renderEventList())" title="Neu laden">↻ Sync</button>
+  <div class="header-actions">
     <button class="btn btn-sm" onclick="exportData()">↓ Export</button>
     <button class="btn btn-sm" onclick="document.getElementById('importFile').click()">↑ Import</button>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
@@ -569,88 +541,19 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ─── JSONBin Konfiguration ────────────────────────────────────────────────────
-// Ersetze DEIN_API_KEY mit deinem X-Master-Key von jsonbin.io
-// Ersetze DEINE_BIN_ID nach dem ersten Speichern (wird in der Konsole ausgegeben)
-const JSONBIN_KEY = '$2a$10$P9LCSz89.pyxRr5shXBRBOTIEAE74cblcaqoRRHcdFPokaFk8AcIO';
-const JSONBIN_BIN = 'DEINE_BIN_ID'; // leer lassen beim ersten Start – wird automatisch erstellt
-// ─────────────────────────────────────────────────────────────────────────────
-
 const STORAGE_KEY = 'sgi_events_v2';
 let events = [];
 let editId = null;
 let charts = {};
-let binId = JSONBIN_BIN || localStorage.getItem('sgi_bin_id') || '';
 
-function setSyncStatus(state, msg) {
-  const el = document.getElementById('syncStatus');
-  if (!el) return;
-  const colors = { ok: '#4caf50', err: '#e05252', loading: '#e9a030' };
-  el.textContent = msg;
-  el.style.color = colors[state] || '#fff';
-}
-
-async function loadData() {
-  // Erst aus localStorage laden (schnell)
+function loadData() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) events = JSON.parse(raw);
   } catch(e) { events = []; }
-
-  // Dann aus JSONBin (aktueller Stand aller Kollegen)
-  if (!JSONBIN_KEY || JSONBIN_KEY === '$2a$10$P9LCSz89.pyxRr5shXBRBOTIEAE74cblcaqoRRHcdFPokaFk8AcIO') {
-    setSyncStatus('err', '⚠ Kein API Key');
-    return;
-  }
-  setSyncStatus('loading', '↻ Lade...');
-  try {
-    if (!binId) {
-      // Neue Bin erstellen
-      const res = await fetch('https://api.jsonbin.io/v3/b', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Name': 'SGI-Events' },
-        body: JSON.stringify({ events: [] })
-      });
-      const data = await res.json();
-      binId = data.metadata?.id || '';
-      localStorage.setItem('sgi_bin_id', binId);
-      console.log('Neue Bin erstellt – ID:', binId, '← Diese ID in JSONBIN_BIN eintragen!');
-      setSyncStatus('ok', '✓ Verbunden');
-    } else {
-      const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
-        headers: { 'X-Master-Key': JSONBIN_KEY }
-      });
-      const data = await res.json();
-      if (data.record?.events) {
-        events = data.record.events;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
-        renderEventList();
-      }
-      setSyncStatus('ok', '✓ Synchronisiert');
-    }
-  } catch(e) {
-    setSyncStatus('err', '✗ Offline');
-    console.error('JSONBin Fehler:', e);
-  }
 }
-
-async function saveData() {
-  // Sofort lokal speichern
+function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
-
-  if (!JSONBIN_KEY || JSONBIN_KEY === 'DEIN_API_KEY' || !binId) return;
-  setSyncStatus('loading', '↻ Speichere...');
-  try {
-    await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY },
-      body: JSON.stringify({ events })
-    });
-    setSyncStatus('ok', '✓ Gespeichert');
-  } catch(e) {
-    setSyncStatus('err', '✗ Sync-Fehler');
-    console.error('JSONBin Speicherfehler:', e);
-  }
 }
 
 function fmt(v) {
@@ -993,8 +896,8 @@ function importData(ev) {
   ev.target.value = '';
 }
 
-loadData().then(() => renderEventList());
-
+loadData();
+renderEventList();
 </script>
 </body>
 </html>
