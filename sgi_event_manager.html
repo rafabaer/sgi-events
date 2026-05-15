@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SGI Balingen – Event Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --red: #CC0000;
+    --red-light: #f8e6e6;
+    --red-mid: #e88;
+    --black: #1a1a1a;
+    --gray-100: #f5f4f2;
+    --gray-200: #ebe9e5;
+    --gray-300: #d4d1cb;
+    --gray-500: #8a877f;
+    --gray-700: #4a4845;
+    --white: #ffffff;
+    --success: #1a7a4a;
+    --success-bg: #e8f5ee;
+    --danger: #c0392b;
+    --danger-bg: #fdf0ee;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.07);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--gray-100);
+    color: var(--black);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--black);
+    color: var(--white);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 3px solid var(--red);
+  }
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .header-logo {
+    width: 34px;
+    height: 34px;
+    background: var(--red);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Serif Display', serif;
+    font-size: 14px;
+    color: white;
+    font-weight: 400;
+  }
+  .header-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+  }
+  .header-sub {
+    font-size: 11px;
+    color: var(--gray-300);
+    margin-top: -2px;
+  }
+  .header-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  /* LAYOUT */
+  .layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    min-height: calc(100vh - 60px);
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    background: var(--white);
+    border-right: 1px solid var(--gray-200);
+    padding: 1.5rem 0;
+    position: sticky;
+    top: 60px;
+    height: calc(100vh - 60px);
+    overflow-y: auto;
+  }
+  .nav-section {
+    padding: 0 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .nav-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gray-500);
+    padding: 0 0.5rem;
+    margin-bottom: 6px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--gray-700);
+    transition: all 0.15s;
+    font-weight: 400;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+  }
+  .nav-item:hover { background: var(--gray-100); color: var(--black); }
+  .nav-item.active { background: var(--red-light); color: var(--red); font-weight: 500; }
+  .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  /* MAIN */
+  .main {
+    padding: 2rem;
+    max-width: 900px;
+  }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .page-header {
+    margin-bottom: 1.5rem;
+  }
+  .page-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    font-weight: 400;
+    color: var(--black);
+    line-height: 1.2;
+  }
+  .page-sub {
+    font-size: 13px;
+    color: var(--gray-500);
+    margin-top: 4px;
+  }
+
+  /* METRIC CARDS */
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 1.5rem;
+  }
+  .metric {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--gray-200);
+  }
+  .metric-label { font-size: 11px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .metric-value { font-size: 22px; font-weight: 500; color: var(--black); line-height: 1; }
+  .metric-value.green { color: var(--success); }
+  .metric-value.red { color: var(--danger); }
+  .metric-sub { font-size: 11px; color: var(--gray-500); margin-top: 4px; }
+
+  /* CARDS */
+  .card {
+    background: var(--white);
+    border-radius: var(--radius);
+    border: 1px solid var(--gray-200);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow);
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--black);
+  }
+
+  /* SEARCH */
+  .search-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 1rem;
+  }
+  .search-row input,
+  .search-row select {
+    flex: 1;
+  }
+
+  /* INPUTS */
+  input, select, textarea {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 8px 12px;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    color: var(--black);
+    width: 100%;
+    transition: border-color 0.15s;
+    outline: none;
+  }
+  input:focus, select:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(204,0,0,0.08); }
+  label { font-size: 12px; color: var(--gray-500); display: block; margin-bottom: 4px; font-weight: 500; }
+
+  /* FORM GRID */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-grid .full { grid-column: 1 / -1; }
+  .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .form-group { display: flex; flex-direction: column; }
+
+  .section-divider {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin: 1.25rem 0 0.75rem;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--red-light);
+  }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--gray-300);
+    background: var(--white);
+    color: var(--black);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--gray-100); border-color: var(--gray-500); }
+  .btn-primary { background: var(--red); color: var(--white); border-color: var(--red); }
+  .btn-primary:hover { background: #aa0000; border-color: #aa0000; }
+  .btn-ghost { border-color: transparent; color: var(--gray-500); }
+  .btn-ghost:hover { background: var(--gray-100); color: var(--black); border-color: transparent; }
+  .btn-danger { color: var(--danger); border-color: #f5c6c2; }
+  .btn-danger:hover { background: var(--danger-bg); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn-row { display: flex; gap: 8px; margin-top: 1.25rem; flex-wrap: wrap; }
+
+  /* EVENT LIST */
+  .event-list { display: flex; flex-direction: column; gap: 8px; }
+  .event-item {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: var(--shadow);
+  }
+  .event-item:hover { border-color: var(--red); box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+  .event-name { font-size: 15px; font-weight: 500; color: var(--black); }
+  .event-meta { font-size: 12px; color: var(--gray-500); margin-top: 2px; }
+  .event-right { text-align: right; }
+  .event-umsatz { font-size: 12px; color: var(--gray-500); }
+  .event-profit { font-size: 15px; font-weight: 500; }
+  .profit-pos { color: var(--success); }
+  .profit-neg { color: var(--danger); }
+  .year-badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    background: var(--red-light);
+    color: var(--red);
+    font-weight: 500;
+    margin-left: 6px;
+  }
+  .event-actions { display: flex; gap: 6px; margin-left: 12px; }
+
+  /* BREAKDOWN */
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--gray-200);
+    font-size: 13px;
+  }
+  .breakdown-row:last-child { border-bottom: none; }
+  .breakdown-key { color: var(--gray-700); }
+  .breakdown-val { font-weight: 500; color: var(--black); }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
+
+  /* CHARTS */
+  .chart-wrap { position: relative; width: 100%; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 10px; font-size: 12px; color: var(--gray-500); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 4px; }
+
+  /* EMPTY */
+  .empty {
+    text-align: center;
+    padding: 3rem;
+    color: var(--gray-500);
+    font-size: 14px;
+  }
+  .empty-icon { font-size: 36px; margin-bottom: 12px; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--black);
+    color: var(--white);
+    padding: 12px 20px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-lg);
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* MODAL */
+  .modal-bg {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    width: 90%;
+    max-width: 420px;
+    box-shadow: var(--shadow-lg);
+  }
+  .modal-title { font-size: 16px; font-weight: 500; margin-bottom: 1rem; }
+
+  hr { border: none; border-top: 1px solid var(--gray-200); margin: 1rem 0; }
+
+  @media (max-width: 680px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .main { padding: 1rem; }
+    .form-grid, .form-grid-3 { grid-template-columns: 1fr; }
+    .form-grid .full { grid-column: 1; }
+    .two-col { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-brand">
+    <div class="header-logo">SGI</div>
+    <div>
+      <div class="header-title">Event Manager</div>
+      <div class="header-sub">Schützengilde 1834 Balingen e.V.</div>
+    </div>
+  </div>
+  <div class="header-actions" style="display:flex;align-items:center;gap:12px">
+    <span id="syncStatus" style="font-size:12px;color:#aaa">…</span>
+    <button class="btn btn-sm" onclick="loadData().then(()=>renderEventList())" title="Neu laden">↻ Sync</button>
+    <button class="btn btn-sm" onclick="exportData()">↓ Export</button>
+    <button class="btn btn-sm" onclick="document.getElementById('importFile').click()">↑ Import</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar">
+    <div class="nav-section">
+      <div class="nav-label">Auswertung</div>
+      <button class="nav-item active" onclick="showPage('events')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Alle Events
+      </button>
+      <button class="nav-item" onclick="showPage('overview')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="7" width="4" height="14"/><rect x="17" y="3" width="4" height="18"/></svg>
+        Vergleich
+      </button>
+      <button class="nav-item" onclick="showPage('trends')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Jahresverlauf
+      </button>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Daten</div>
+      <button class="nav-item" onclick="showPage('add')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        Neues Event
+      </button>
+    </div>
+  </nav>
+
+  <main class="main">
+
+    <!-- EVENTS PAGE -->
+    <div id="page-events" class="page active">
+      <div class="page-header">
+        <div class="page-title">Events</div>
+        <div class="page-sub">Alle erfassten Veranstaltungen</div>
+      </div>
+      <div id="summaryMetrics" class="metric-grid"></div>
+      <div class="search-row">
+        <input type="text" id="searchInput" placeholder="Event suchen…" oninput="renderEventList()">
+        <select id="filterYear" onchange="renderEventList()" style="max-width:120px"><option value="">Alle Jahre</option></select>
+      </div>
+      <div id="eventList"></div>
+    </div>
+
+    <!-- ADD/EDIT PAGE -->
+    <div id="page-add" class="page">
+      <div class="page-header">
+        <div class="page-title" id="formTitle">Neues Event</div>
+        <div class="page-sub">Veranstaltung erfassen</div>
+      </div>
+      <div class="card">
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>Eventname *</label>
+            <input type="text" id="f_name" placeholder="z.B. Osterfarbenschießen">
+          </div>
+          <div class="form-group">
+            <label>Jahr *</label>
+            <input type="number" id="f_year" value="2025" min="2000" max="2100">
+          </div>
+          <div class="form-group">
+            <label>Datum</label>
+            <input type="date" id="f_date">
+          </div>
+          <div class="form-group full">
+            <label>Notiz</label>
+            <input type="text" id="f_note" placeholder="Optionale Anmerkung">
+          </div>
+        </div>
+
+        <div class="section-divider">Einnahmen (€)</div>
+        <div class="form-grid-3">
+          <div class="form-group"><label>Startgelder / Teilnahme</label><input type="number" id="f_r_start" value="0" min="0" step="0.01"></div>
+          <div class="form-group"><label>Gaststätte</label><input type="number" id="f_r_gast" value="0" min="0" step="0.01"></div>
+          <div class="form-group"><label>Miete</label><input type="number" id="f_r_miete" value="0" min="0" step="0.01"></div>
+          <div class="form-group"><label>Werbeeinnahmen</label><input type="number" id="f_r_werbung" value="0" min="0" step="0.01"></div>
+          <div class="form-group"><label>Sonstiges</label><input type="number" id="f_r_sonst" value="0" min="0" step="0.01"></div>
+        </div>
+
+        <div class="section-divider">Ausgaben (€)</div>
+        <div class="form-grid-3">
+          <div class="form-group"><label>Einkauf / Material</label><input type="number" id="f_c_einkauf" value="0" min="0" step="0.01"></div>
+          <div class="form-group"><label>Raumkosten</label><input type="number" id="f_c_raum" value="0" min="0" step="0.01"></div>
+          <div class="form-group"><label>Werbung / Druck</label><input type="number" id="f_c_werbung" value="0" min="0" step="0.01"></div>
+          <div class="form-group"><label>Sonstiges</label><input type="number" id="f_c_sonst" value="0" min="0" step="0.01"></div>
+        </div>
+
+        <div class="section-divider">Personal</div>
+        <div class="form-grid">
+          <div class="form-group"><label>Anzahl Helfer</label><input type="number" id="f_p_count" value="0" min="0"></div>
+          <div class="form-group"><label>Gesamtstunden</label><input type="number" id="f_p_hours" value="0" min="0" step="0.5"></div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="saveEvent()">Speichern</button>
+          <button class="btn" onclick="showPage('events')">Abbrechen</button>
+          <button class="btn btn-danger btn-sm" id="deleteBtn" style="display:none;margin-left:auto" onclick="deleteCurrentEvent()">Löschen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRENDS PAGE -->
+    <div id="page-trends" class="page">
+      <div class="page-header">
+        <div class="page-title">Jahresverlauf</div>
+        <div class="page-sub">Entwicklung eines Events über die Jahre</div>
+      </div>
+      <div class="card">
+        <div class="form-group" style="margin-bottom:1.25rem">
+          <label>Event auswählen</label>
+          <select id="trendSelect" onchange="renderTrend()"><option value="">– Bitte wählen –</option></select>
+        </div>
+        <div id="trendContent"><div class="empty"><div class="empty-icon">📈</div>Wähle ein Event um den Verlauf zu sehen.</div></div>
+      </div>
+    </div>
+
+    <!-- OVERVIEW PAGE -->
+    <div id="page-overview" class="page">
+      <div class="page-header">
+        <div class="page-title">Vergleich</div>
+        <div class="page-sub">Alle Events im Überblick</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Events nach Jahr</span>
+          <select id="overviewYear" onchange="renderOverview()" style="width:auto"><option value="">Alle Jahre</option></select>
+        </div>
+        <div id="overviewContent"><div class="empty"><div class="empty-icon">📊</div>Noch keine Events vorhanden.</div></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── JSONBin Konfiguration ────────────────────────────────────────────────────
+// Ersetze DEIN_API_KEY mit deinem X-Master-Key von jsonbin.io
+// Ersetze DEINE_BIN_ID nach dem ersten Speichern (wird in der Konsole ausgegeben)
+const JSONBIN_KEY = 'DEIN_API_KEY';
+const JSONBIN_BIN = 'DEINE_BIN_ID'; // leer lassen beim ersten Start – wird automatisch erstellt
+// ─────────────────────────────────────────────────────────────────────────────
+
+const STORAGE_KEY = 'sgi_events_v2';
+let events = [];
+let editId = null;
+let charts = {};
+let binId = JSONBIN_BIN || localStorage.getItem('sgi_bin_id') || '';
+
+function setSyncStatus(state, msg) {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  const colors = { ok: '#4caf50', err: '#e05252', loading: '#e9a030' };
+  el.textContent = msg;
+  el.style.color = colors[state] || '#fff';
+}
+
+async function loadData() {
+  // Erst aus localStorage laden (schnell)
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) events = JSON.parse(raw);
+  } catch(e) { events = []; }
+
+  // Dann aus JSONBin (aktueller Stand aller Kollegen)
+  if (!JSONBIN_KEY || JSONBIN_KEY === 'DEIN_API_KEY') {
+    setSyncStatus('err', '⚠ Kein API Key');
+    return;
+  }
+  setSyncStatus('loading', '↻ Lade...');
+  try {
+    if (!binId) {
+      // Neue Bin erstellen
+      const res = await fetch('https://api.jsonbin.io/v3/b', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Name': 'SGI-Events' },
+        body: JSON.stringify({ events: [] })
+      });
+      const data = await res.json();
+      binId = data.metadata?.id || '';
+      localStorage.setItem('sgi_bin_id', binId);
+      console.log('Neue Bin erstellt – ID:', binId, '← Diese ID in JSONBIN_BIN eintragen!');
+      setSyncStatus('ok', '✓ Verbunden');
+    } else {
+      const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+        headers: { 'X-Master-Key': JSONBIN_KEY }
+      });
+      const data = await res.json();
+      if (data.record?.events) {
+        events = data.record.events;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+        renderEventList();
+      }
+      setSyncStatus('ok', '✓ Synchronisiert');
+    }
+  } catch(e) {
+    setSyncStatus('err', '✗ Offline');
+    console.error('JSONBin Fehler:', e);
+  }
+}
+
+async function saveData() {
+  // Sofort lokal speichern
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+
+  if (!JSONBIN_KEY || JSONBIN_KEY === 'DEIN_API_KEY' || !binId) return;
+  setSyncStatus('loading', '↻ Speichere...');
+  try {
+    await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY },
+      body: JSON.stringify({ events })
+    });
+    setSyncStatus('ok', '✓ Gespeichert');
+  } catch(e) {
+    setSyncStatus('err', '✗ Sync-Fehler');
+    console.error('JSONBin Speicherfehler:', e);
+  }
+}
+
+function fmt(v) {
+  return (Math.round(v * 100) / 100).toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+}
+function fmtN(v) { return (Math.round(v*10)/10).toLocaleString('de-DE'); }
+
+function getRevenue(e) { return (e.r_start||0)+(e.r_gast||0)+(e.r_miete||0)+(e.r_werbung||0)+(e.r_sonst||0); }
+function getCosts(e) { return (e.c_einkauf||0)+(e.c_raum||0)+(e.c_werbung||0)+(e.c_sonst||0); }
+function getProfit(e) { return getRevenue(e)-getCosts(e); }
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function showPage(p) {
+  document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+  document.getElementById('page-' + p).classList.add('active');
+  const map = {events:0, overview:1, trends:2, add:3};
+  document.querySelectorAll('.nav-item')[map[p]]?.classList.add('active');
+  if (p === 'events') renderEventList();
+  if (p === 'trends') { populateTrendSelect(); renderTrend(); }
+  if (p === 'overview') renderOverview();
+  if (p === 'add' && !editId) resetForm();
+}
+
+function getYears() {
+  return [...new Set(events.map(e => e.year))].sort((a,b)=>b-a);
+}
+
+function renderEventList() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const selYr = document.getElementById('filterYear');
+  const yr = selYr.value;
+  const yrs = getYears();
+  const cur = selYr.value;
+  selYr.innerHTML = '<option value="">Alle Jahre</option>' + yrs.map(y=>`<option value="${y}"${y==cur?' selected':''}>${y}</option>`).join('');
+
+  let list = events.filter(e=>
+    (!q || e.name.toLowerCase().includes(q)) &&
+    (!selYr.value || e.year == selYr.value)
+  ).sort((a,b)=>(b.year-a.year)||((b.date||'')>(a.date||'')?1:-1));
+
+  const totalRev = list.reduce((s,e)=>s+getRevenue(e),0);
+  const totalCost = list.reduce((s,e)=>s+getCosts(e),0);
+  const totalProfit = totalRev-totalCost;
+  const totalHours = list.reduce((s,e)=>s+(e.p_hours||0),0);
+
+  document.getElementById('summaryMetrics').innerHTML = `
+    <div class="metric"><div class="metric-label">Events</div><div class="metric-value">${list.length}</div></div>
+    <div class="metric"><div class="metric-label">Gesamtumsatz</div><div class="metric-value" style="font-size:18px">${fmt(totalRev)}</div></div>
+    <div class="metric"><div class="metric-label">Gesamtgewinn</div><div class="metric-value ${totalProfit>=0?'green':'red'}" style="font-size:18px">${fmt(totalProfit)}</div></div>
+    <div class="metric"><div class="metric-label">Arbeitsstunden</div><div class="metric-value">${fmtN(totalHours)}</div><div class="metric-sub">gesamt</div></div>
+  `;
+
+  if (!list.length) {
+    document.getElementById('eventList').innerHTML = '<div class="empty"><div class="empty-icon">🎯</div>Keine Events gefunden.<br>Füge das erste Event hinzu.</div>';
+    return;
+  }
+
+  document.getElementById('eventList').innerHTML = '<div class="event-list">' + list.map(e=>{
+    const p = getProfit(e);
+    const r = getRevenue(e);
+    return `<div class="event-item" onclick="editEvent('${e.id}')">
+      <div style="flex:1">
+        <div class="event-name">${e.name}<span class="year-badge">${e.year}</span></div>
+        <div class="event-meta">${e.date?e.date+' · ':''} ${e.p_count||0} Helfer · ${fmtN(e.p_hours||0)} h${e.note?' · '+e.note:''}</div>
+      </div>
+      <div class="event-right">
+        <div class="event-umsatz">Umsatz ${fmt(r)}</div>
+        <div class="event-profit ${p>=0?'profit-pos':'profit-neg'}">${p>=0?'+':''}${fmt(p)}</div>
+      </div>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+function editEvent(id) {
+  const e = events.find(x=>x.id===id);
+  if (!e) return;
+  editId = id;
+  document.getElementById('formTitle').textContent = 'Event bearbeiten';
+  document.getElementById('deleteBtn').style.display = 'inline-flex';
+  document.getElementById('f_name').value = e.name||'';
+  document.getElementById('f_year').value = e.year||2025;
+  document.getElementById('f_date').value = e.date||'';
+  document.getElementById('f_note').value = e.note||'';
+  document.getElementById('f_r_start').value = e.r_start||0;
+  document.getElementById('f_r_gast').value = e.r_gast||0;
+  document.getElementById('f_r_miete').value = e.r_miete||0;
+  document.getElementById('f_r_werbung').value = e.r_werbung||0;
+  document.getElementById('f_r_sonst').value = e.r_sonst||0;
+  document.getElementById('f_c_einkauf').value = e.c_einkauf||0;
+  document.getElementById('f_c_raum').value = e.c_raum||0;
+  document.getElementById('f_c_werbung').value = e.c_werbung||0;
+  document.getElementById('f_c_sonst').value = e.c_sonst||0;
+  document.getElementById('f_p_count').value = e.p_count||0;
+  document.getElementById('f_p_hours').value = e.p_hours||0;
+  showPage('add');
+}
+
+function resetForm() {
+  editId = null;
+  document.getElementById('formTitle').textContent = 'Neues Event';
+  document.getElementById('deleteBtn').style.display = 'none';
+  document.getElementById('f_name').value = '';
+  document.getElementById('f_year').value = new Date().getFullYear();
+  document.getElementById('f_date').value = '';
+  document.getElementById('f_note').value = '';
+  ['f_r_start','f_r_gast','f_r_miete','f_r_werbung','f_r_sonst',
+   'f_c_einkauf','f_c_raum','f_c_werbung','f_c_sonst',
+   'f_p_count','f_p_hours'].forEach(id=>document.getElementById(id).value=0);
+}
+
+function saveEvent() {
+  const name = document.getElementById('f_name').value.trim();
+  if (!name) { alert('Bitte Eventname eingeben.'); return; }
+  const ev = {
+    id: editId || ('id_'+Date.now()),
+    name,
+    year: parseInt(document.getElementById('f_year').value)||2025,
+    date: document.getElementById('f_date').value,
+    note: document.getElementById('f_note').value.trim(),
+    r_start: parseFloat(document.getElementById('f_r_start').value)||0,
+    r_gast: parseFloat(document.getElementById('f_r_gast').value)||0,
+    r_miete: parseFloat(document.getElementById('f_r_miete').value)||0,
+    r_werbung: parseFloat(document.getElementById('f_r_werbung').value)||0,
+    r_sonst: parseFloat(document.getElementById('f_r_sonst').value)||0,
+    c_einkauf: parseFloat(document.getElementById('f_c_einkauf').value)||0,
+    c_raum: parseFloat(document.getElementById('f_c_raum').value)||0,
+    c_werbung: parseFloat(document.getElementById('f_c_werbung').value)||0,
+    c_sonst: parseFloat(document.getElementById('f_c_sonst').value)||0,
+    p_count: parseInt(document.getElementById('f_p_count').value)||0,
+    p_hours: parseFloat(document.getElementById('f_p_hours').value)||0,
+  };
+  if (editId) { const i=events.findIndex(x=>x.id===editId); if(i>=0) events[i]=ev; }
+  else events.push(ev);
+  saveData();
+  toast(editId ? '✓ Event aktualisiert' : '✓ Event gespeichert');
+  resetForm();
+  showPage('events');
+}
+
+function deleteCurrentEvent() {
+  if (!editId) return;
+  const e = events.find(x=>x.id===editId);
+  if (!confirm(`„${e?.name}" wirklich löschen?`)) return;
+  events = events.filter(x=>x.id!==editId);
+  saveData();
+  toast('Event gelöscht');
+  resetForm();
+  showPage('events');
+}
+
+function populateTrendSelect() {
+  const names = [...new Set(events.map(e=>e.name))].sort();
+  const sel = document.getElementById('trendSelect');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">– Bitte wählen –</option>' + names.map(n=>`<option value="${n}"${n===cur?' selected':''}>${n}</option>`).join('');
+}
+
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+function renderTrend() {
+  const name = document.getElementById('trendSelect').value;
+  const el = document.getElementById('trendContent');
+  if (!name) { el.innerHTML = '<div class="empty"><div class="empty-icon">📈</div>Wähle ein Event.</div>'; return; }
+  const evs = events.filter(e=>e.name===name).sort((a,b)=>a.year-b.year);
+  if (!evs.length) { el.innerHTML='<div class="empty">Keine Daten.</div>'; return; }
+
+  const labels = evs.map(e=>e.year.toString());
+  const revs = evs.map(e=>Math.round(getRevenue(e)*100)/100);
+  const costs = evs.map(e=>Math.round(getCosts(e)*100)/100);
+  const profits = evs.map(e=>Math.round(getProfit(e)*100)/100);
+  const hours = evs.map(e=>Math.round((e.p_hours||0)*10)/10);
+  const helpers = evs.map(e=>e.p_count||0);
+
+  el.innerHTML = `
+    <div class="legend">
+      <span><span class="legend-dot" style="background:#3a86d4"></span>Umsatz</span>
+      <span><span class="legend-dot" style="background:#e05252"></span>Kosten</span>
+      <span><span class="legend-dot" style="background:#1a9e6a"></span>Gewinn</span>
+    </div>
+    <div class="chart-wrap" style="height:230px"><canvas id="trendChartMain" role="img" aria-label="Verlauf ${name}"></canvas></div>
+    <div style="margin-top:1.5rem;margin-bottom:8px;font-size:12px;font-weight:500;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.06em">Personaleinsatz</div>
+    <div class="legend">
+      <span><span class="legend-dot" style="background:#7c6fd4"></span>Stunden</span>
+      <span><span class="legend-dot" style="background:#e9a030"></span>Helfer</span>
+    </div>
+    <div class="chart-wrap" style="height:160px"><canvas id="trendChartHours" role="img" aria-label="Stunden ${name}"></canvas></div>
+    <hr>
+    ${evs.map(e=>`
+      <div style="margin-bottom:1.25rem">
+        <div style="font-size:14px;font-weight:500;margin-bottom:8px;color:var(--black)">${e.year}${e.date?' <span style="color:var(--gray-500);font-weight:400;font-size:12px">· '+e.date+'</span>':''}</div>
+        <div class="two-col">
+          <div>
+            <div style="font-size:11px;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Einnahmen</div>
+            ${[['Startgelder',e.r_start],['Gaststätte',e.r_gast],['Miete',e.r_miete],['Werbeeinnahmen',e.r_werbung],['Sonstiges',e.r_sonst]].filter(([,v])=>v>0).map(([k,v])=>`<div class="breakdown-row"><span class="breakdown-key">${k}</span><span class="breakdown-val">${fmt(v)}</span></div>`).join('')||'<div style="font-size:13px;color:var(--gray-500)">–</div>'}
+            <div class="breakdown-row" style="margin-top:4px;font-weight:500"><span>Gesamt</span><span>${fmt(getRevenue(e))}</span></div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Ausgaben</div>
+            ${[['Einkauf/Material',e.c_einkauf],['Raumkosten',e.c_raum],['Werbung/Druck',e.c_werbung],['Sonstiges',e.c_sonst]].filter(([,v])=>v>0).map(([k,v])=>`<div class="breakdown-row"><span class="breakdown-key">${k}</span><span class="breakdown-val">${fmt(v)}</span></div>`).join('')||'<div style="font-size:13px;color:var(--gray-500)">–</div>'}
+            <div class="breakdown-row" style="margin-top:4px;font-weight:500"><span>Gesamt</span><span>${fmt(getCosts(e))}</span></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:1.5rem;margin-top:8px;font-size:13px;padding:8px 12px;background:var(--gray-100);border-radius:var(--radius-sm)">
+          <span style="color:${getProfit(e)>=0?'var(--success)':'var(--danger)'};font-weight:500">Gewinn: ${fmt(getProfit(e))}</span>
+          <span style="color:var(--gray-500)">👥 ${e.p_count||0} Helfer · ⏱ ${fmtN(e.p_hours||0)} h</span>
+        </div>
+        ${e.note?`<div style="font-size:12px;color:var(--gray-500);margin-top:6px;font-style:italic">${e.note}</div>`:''}
+      </div>
+    `).join('<hr>')}
+  `;
+
+  destroyChart('trendMain');
+  destroyChart('trendHours');
+
+  charts['trendMain'] = new Chart(document.getElementById('trendChartMain'),{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'Umsatz',data:revs,backgroundColor:'#b8d4f0',borderColor:'#3a86d4',borderWidth:1.5},
+      {label:'Kosten',data:costs,backgroundColor:'#f5c0c0',borderColor:'#e05252',borderWidth:1.5},
+      {label:'Gewinn',data:profits,type:'line',borderColor:'#1a9e6a',backgroundColor:'rgba(26,158,106,0.1)',borderWidth:2,pointRadius:4,tension:0.3,fill:true}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{y:{ticks:{callback:v=>v.toLocaleString('de-DE')+'€'}}}}
+  });
+
+  charts['trendHours'] = new Chart(document.getElementById('trendChartHours'),{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'Stunden',data:hours,backgroundColor:'#c8c0f0',borderColor:'#7c6fd4',borderWidth:1.5},
+      {label:'Helfer',data:helpers,backgroundColor:'#fad090',borderColor:'#e9a030',borderWidth:1.5}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}
+  });
+}
+
+function renderOverview() {
+  const sel = document.getElementById('overviewYear');
+  const cur = sel.value;
+  const yrs = getYears();
+  sel.innerHTML = '<option value="">Alle Jahre</option>' + yrs.map(y=>`<option value="${y}"${y==cur?' selected':''}>${y}</option>`).join('');
+
+  let list = cur ? events.filter(e=>e.year==cur) : events;
+  const el = document.getElementById('overviewContent');
+  if (!list.length) { el.innerHTML='<div class="empty"><div class="empty-icon">📊</div>Keine Events vorhanden.</div>'; return; }
+
+  list = list.sort((a,b)=>getRevenue(b)-getRevenue(a));
+  const names = list.map(e=>e.name.length>20?e.name.substring(0,18)+'…':e.name);
+  const revs = list.map(e=>Math.round(getRevenue(e)*100)/100);
+  const profits = list.map(e=>Math.round(getProfit(e)*100)/100);
+  const hours = list.map(e=>Math.round((e.p_hours||0)*10)/10);
+  const h = Math.max(220, list.length*44+60);
+
+  el.innerHTML = `
+    <div class="legend" style="margin-bottom:10px">
+      <span><span class="legend-dot" style="background:#b8d4f0"></span>Umsatz</span>
+      <span><span class="legend-dot" style="background:#c8f0d8"></span>Gewinn</span>
+    </div>
+    <div class="chart-wrap" style="height:${h}px"><canvas id="ovChart" role="img" aria-label="Event Vergleich Umsatz Gewinn"></canvas></div>
+    <div style="margin-top:1.5rem;margin-bottom:8px;font-size:12px;font-weight:500;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.06em">Arbeitsstunden</div>
+    <div class="chart-wrap" style="height:${h}px"><canvas id="ovHours" role="img" aria-label="Event Vergleich Stunden"></canvas></div>
+    <hr>
+    <div style="overflow-x:auto">
+    <table style="width:100%;font-size:13px;border-collapse:collapse">
+      <thead><tr style="border-bottom:2px solid var(--gray-200)">
+        <th style="text-align:left;padding:8px 4px;color:var(--gray-500);font-weight:500">Event</th>
+        <th style="text-align:right;padding:8px 4px;color:var(--gray-500);font-weight:500">Jahr</th>
+        <th style="text-align:right;padding:8px 4px;color:var(--gray-500);font-weight:500">Umsatz</th>
+        <th style="text-align:right;padding:8px 4px;color:var(--gray-500);font-weight:500">Kosten</th>
+        <th style="text-align:right;padding:8px 4px;color:var(--gray-500);font-weight:500">Gewinn</th>
+        <th style="text-align:right;padding:8px 4px;color:var(--gray-500);font-weight:500">Helfer</th>
+        <th style="text-align:right;padding:8px 4px;color:var(--gray-500);font-weight:500">Stunden</th>
+      </tr></thead>
+      <tbody>${list.map(e=>{const p=getProfit(e);return`<tr style="border-bottom:1px solid var(--gray-200)">
+        <td style="padding:8px 4px;font-weight:500">${e.name}</td>
+        <td style="padding:8px 4px;text-align:right;color:var(--gray-500)">${e.year}</td>
+        <td style="padding:8px 4px;text-align:right">${fmt(getRevenue(e))}</td>
+        <td style="padding:8px 4px;text-align:right;color:var(--gray-500)">${fmt(getCosts(e))}</td>
+        <td style="padding:8px 4px;text-align:right;font-weight:500;color:${p>=0?'var(--success)':'var(--danger)'}">${fmt(p)}</td>
+        <td style="padding:8px 4px;text-align:right">${e.p_count||0}</td>
+        <td style="padding:8px 4px;text-align:right">${fmtN(e.p_hours||0)}</td>
+      </tr>`;}).join('')}</tbody>
+    </table>
+    </div>
+  `;
+
+  destroyChart('ovMain');
+  destroyChart('ovHours');
+
+  charts['ovMain'] = new Chart(document.getElementById('ovChart'),{
+    type:'bar',
+    data:{labels:names,datasets:[
+      {label:'Umsatz',data:revs,backgroundColor:'#b8d4f0',borderColor:'#3a86d4',borderWidth:1.5},
+      {label:'Gewinn',data:profits,backgroundColor:'#b8f0d0',borderColor:'#1a9e6a',borderWidth:1.5}
+    ]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{ticks:{callback:v=>v.toLocaleString('de-DE')+'€'}}}}
+  });
+
+  charts['ovHours'] = new Chart(document.getElementById('ovHours'),{
+    type:'bar',
+    data:{labels:names,datasets:[{label:'Stunden',data:hours,backgroundColor:'#c8c0f0',borderColor:'#7c6fd4',borderWidth:1.5}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}
+  });
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(events, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'sgi_events_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  toast('✓ Daten exportiert');
+}
+
+function importData(ev) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!Array.isArray(data)) throw new Error();
+      events = data;
+      saveData();
+      renderEventList();
+      toast('✓ ' + data.length + ' Events importiert');
+    } catch(err) { alert('Ungültige Datei.'); }
+  };
+  reader.readAsText(file);
+  ev.target.value = '';
+}
+
+loadData().then(() => renderEventList());
+
+</script>
+</body>
+</html>
